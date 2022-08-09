@@ -43,6 +43,7 @@ public class Server : MonoBehaviour
     string sessionName;
     int maxPlayers;
     IMS.PayloadApi payloadApi = new IMS.PayloadApi(new HttpClient());
+    bool isReserved = false;
     #endregion
 
     [Serializable]
@@ -122,7 +123,7 @@ public class Server : MonoBehaviour
         Debug.Log("Ready!");
     }
 
-    void Update()
+    async void Update()
     {
         // Every other frame check for new network events
         if (udp != null && Time.frameCount % 2 == 0 && udp.Available > 0)
@@ -145,6 +146,30 @@ public class Server : MonoBehaviour
             }
 
             UpdateSessionStatus();
+        }
+
+        // Every 500 frames poll to find whether a payload has been reserved
+        if (Time.frameCount % 500 == 0 && !isReserved)
+        {
+            // Get payload details
+            IMS.GetPayloadResponseV0 res;
+            try
+            {
+                res = await payloadApi.GetPayloadV0Async();
+            }
+            catch (IMS.ApiException e)
+            {
+                Debug.LogError(e);
+                return;
+            }
+
+            if (res.Result.Status.State == IMS.PayloadStatusStateV0.Reserved)
+            {
+                isReserved = true;
+                Debug.Log("Reserved!");
+
+                // TODO: get session config and set status
+            }
         }
     }
 
