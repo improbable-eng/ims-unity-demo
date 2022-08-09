@@ -168,12 +168,29 @@ public class Server : MonoBehaviour
                 isReserved = true;
                 Debug.Log("Reserved!");
 
-                // TODO: get session config and set status
+                // Get session config
+                IMS.SessionConfigV0 config;
+                try
+                {
+                    config = await payloadApi.GetSessionConfigV0Async();
+                }
+                catch (IMS.ApiException e)
+                {
+                    Debug.LogError(e);
+                    return;
+                }
+
+                var parsedConfig = JsonUtility.FromJson<GameConfiguration>(config.Config);
+
+                sessionName = parsedConfig.name;
+                maxPlayers = parsedConfig.maxPlayers;
+
+                UpdateSessionStatus();
             }
         }
     }
 
-    void UpdateSessionStatus()
+    async void UpdateSessionStatus()
     {
         // Send to all connected clients the number of connected players
         foreach (EndPoint addr in connected)
@@ -181,7 +198,19 @@ public class Server : MonoBehaviour
             udp.SendTo(new byte[] {Convert.ToByte(connected.Count)}, addr);
         }
 
-        // TODO: Set the session status in the session manager
+        // Set session status
+        try
+        {
+            await payloadApi.SetSessionStatusV0Async(new Dictionary<string, string>() {
+                {"name", sessionName},
+                {"connected", connected.Count.ToString()},
+                {"maxPlayers", maxPlayers.ToString()}
+            });
+        }
+        catch (IMS.ApiException e)
+        {
+            Debug.LogError(e);
+        }
     }
 
     void HandleNewClient(EndPoint addr)
