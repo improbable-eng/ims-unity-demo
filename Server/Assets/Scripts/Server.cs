@@ -42,6 +42,7 @@ public class Server : MonoBehaviour
     HashSet<EndPoint> connected = new HashSet<EndPoint>();
     string sessionName;
     int maxPlayers;
+    IMS.PayloadApi payloadApi = new IMS.PayloadApi(new HttpClient());
     #endregion
 
     [Serializable]
@@ -51,7 +52,7 @@ public class Server : MonoBehaviour
         public int maxPlayers;
     }
 
-    void Start()
+    async void Start()
     {
         // Take port number as command line argument, default to 8000
         port = 8000;
@@ -84,7 +85,41 @@ public class Server : MonoBehaviour
 
         udp.Blocking = false;
 
-        // TODO: Tell Zeuz the server is ready
+        var ORCHESTRATION_PAYLOAD_API = Environment.GetEnvironmentVariable("ORCHESTRATION_PAYLOAD_API");
+        
+        if (String.IsNullOrEmpty(ORCHESTRATION_PAYLOAD_API))
+        {
+            Debug.LogError("Must set the ORCHESTRATION_PAYLOAD_API environment variable!");
+            return;
+        }
+        else
+        {
+            payloadApi.BaseUrl = "http://" + ORCHESTRATION_PAYLOAD_API;
+            Debug.Log("Payload Api: " + ORCHESTRATION_PAYLOAD_API);
+        }
+
+        // tell Zeuz we are ready to start accepting connections
+        // retry until successful a maximum of 3 times
+        var attempts = 0;
+        while (true)
+        {
+            try
+            {
+                await payloadApi.ReadyV0Async();
+                break;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+                attempts++;
+                if (attempts >= 3)
+                {
+                    Application.Quit();
+                }
+            }
+        }
+
+        Debug.Log("Ready!");
     }
 
     void Update()
