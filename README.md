@@ -1,6 +1,6 @@
 # IMS Unity Demo Game
 ## Overview
-This is a demo multiplayer Pong game built in Unity. The goal is to demonstrate:
+This is a demo multiplayer project built in Unity. The goal is to demonstrate:
 1. How to support [IMS Zeuz](https://docs.ims.improbable.io/docs/ims-zeuz/getting-started) orchestration in your game.
 2. How to integrate [IMS Session Manager](https://docs.ims.improbable.io/docs/ims-session-manager/getting-started) functionality into your game.
 
